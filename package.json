@@ -1,0 +1,18 @@
+{
+  "name": "flag-checker",
+  "version": "1.0.0",
+  "description": "CTF flag checker site — cyberpunk blue/violet theme",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cookie-session": "^2.1.0",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

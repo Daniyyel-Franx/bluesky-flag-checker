@@ -1,0 +1,56 @@
+{
+  "site_title": "BlueSky CTF Flag Checker",
+  "site_subtitle": "Master Flag will be revealed when all the flags are found",
+  "master_flag": "CYS{5up3r14b_m45t3r_r00t_4cc355}",
+  "master_flag_reveal_message": "Good job, Kingpin! You just owned the entire lab and claimed the ultimate root.",
+  "challenges": [
+    {
+      "id": "initial_login",
+      "title": "Initial Login Flag",
+      "prompt": "Enter the respective flag here and submit",
+      "flag": "CYS{ch3m15try_15_th3_5tudy_0f_ch4ng3}"
+    },
+    {
+      "id": "idor",
+      "title": "IDOR",
+      "prompt": "Enter the respective flag here and submit",
+      "flag": "CYS{1_4m_th3_0n3_wh0_kn0ck5}"
+    },
+    {
+      "id": "chemical_otp",
+      "title": "Chemical OTP",
+      "prompt": "Enter the respective flag here and submit",
+      "flag": "CYS{p455w0rd_15_n0t_b34n5_j3553}"
+    },
+    {
+      "id": "cookie_privesc",
+      "title": "Cookie Privilege Escalation",
+      "prompt": "Enter the respective flag here and submit",
+      "flag": "CYS{fr0m_str33t_mul3_t0_k1ngp1n}"
+    },
+    {
+      "id": "stored_xss",
+      "title": "Stored XSS",
+      "prompt": "Enter the respective flag here and submit",
+      "flag": "CYS{th3_fly_1n_th3_l4b0r4t0ry}"
+    },
+    {
+      "id": "sqli",
+      "title": "SQLI",
+      "prompt": "Enter the respective flag here and submit",
+      "flag": "CYS{d4t4b453_d1550lv3d_1n_4c1d}"
+    },
+    {
+      "id": "ssrf",
+      "title": "SSRF",
+      "prompt": "Enter the respective flag here and submit",
+      "flag": "CYS{m4dr1g4l_3l3ctr0m0t1v3_g4t3w4y}"
+    },
+    {
+      "id": "chemistry_notes_crypto",
+      "title": "Chemistry Notes Cryptography",
+      "prompt": "Enter the respective flag here and submit",
+      "flag": "CYS{th3_bl43k_f0r3st_0f_s3cr3t5}"
+    }
+  ]
+}

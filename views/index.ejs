@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= siteTitle %></title>
+
+  <!-- Fonts: Rajdhani for UI, Fira Code for inputs/flags -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+  <!-- ── Header ── -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-text">
+        <h1 class="site-title"><%= siteTitle %></h1>
+        <p class="site-subtitle"><%= siteSubtitle %></p>
+      </div>
+      <div class="progress-widget" id="progressWidget" aria-live="polite">
+        <span class="progress-label">FLAGS CAPTURED</span>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        <span class="progress-count" id="progressCount">0 / <%= totalFlags %></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main grid ── -->
+  <main class="challenges-grid" id="challengesGrid">
+    <% challenges.forEach(function(challenge, index) { %>
+    <%
+      const isSolved = solved[challenge.id] === true;
+    %>
+    <article
+      class="challenge-card<%= isSolved ? ' solved' : '' %>"
+      id="card-<%= challenge.id %>"
+      data-id="<%= challenge.id %>"
+      data-index="<%= index + 1 %>"
+    >
+      <div class="card-header">
+        <span class="card-number"><%= String(index + 1).padStart(2, '0') %></span>
+        <h2 class="card-title"><%= challenge.title %></h2>
+        <span class="card-status-icon" id="icon-<%= challenge.id %>">
+          <% if (isSolved) { %>
+          <svg class="icon-check" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M7 12.5l3.5 3.5 6.5-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <% } %>
+        </span>
+      </div>
+
+      <p class="card-prompt"><%= challenge.prompt %></p>
+
+      <div class="input-row">
+        <input
+          type="text"
+          class="flag-input"
+          id="input-<%= challenge.id %>"
+          placeholder="<%= challenge.placeholder %>"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="none"
+          spellcheck="false"
+          aria-label="Flag input for <%= challenge.title %>"
+          <%= isSolved ? 'readonly disabled' : '' %>
+        />
+        <button
+          class="submit-btn"
+          id="btn-<%= challenge.id %>"
+          data-id="<%= challenge.id %>"
+          aria-label="Submit flag for <%= challenge.title %>"
+          <%= isSolved ? 'disabled' : '' %>
+        >
+          <% if (isSolved) { %>
+          SOLVED
+          <% } else { %>
+          SUBMIT
+          <% } %>
+        </button>
+      </div>
+
+      <div class="feedback" id="feedback-<%= challenge.id %>" aria-live="polite"></div>
+    </article>
+    <% }); %>
+  </main>
+
+  <!-- ── Master flag reveal panel (hidden until all solved) ── -->
+  <section class="master-reveal" id="masterReveal" hidden aria-live="assertive">
+    <div class="master-reveal-inner">
+      <div class="master-reveal-header">
+        <div class="master-glitch-title" data-text="ACCESS GRANTED">ACCESS GRANTED</div>
+        <p class="master-reveal-subtitle">All flags captured. You have full access.</p>
+      </div>
+      <div class="master-flag-box">
+        <span class="master-flag-label">MASTER FLAG</span>
+        <code class="master-flag-value" id="masterFlagValue"></code>
+      </div>
+      <p class="master-reveal-message" id="masterRevealMsg"></p>
+      <div class="particle-container" id="particles" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ── State ──────────────────────────────────────────────────────────────────
+    const TOTAL = <%= totalFlags %>;
+    // Initialise solved state from server-rendered session data
+    // (No flag values are present here — only boolean solved state)
+    const solved = <%- JSON.stringify(
+      Object.fromEntries(
+        challenges.map(c => [c.id, solved[c.id] === true])
+      )
+    ) %>;
+
+    // Count initial solved flags
+    let solvedCount = Object.values(solved).filter(Boolean).length;
+
+    // ── DOM helpers ────────────────────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+    const progressCount = $('progressCount');
+    const progressFill  = $('progressFill');
+    const masterReveal  = $('masterReveal');
+
+    function updateProgress() {
+      progressCount.textContent = solvedCount + ' / ' + TOTAL;
+      progressFill.style.width = ((solvedCount / TOTAL) * 100) + '%';
+    }
+
+    // ── Mark a card as solved in the UI ───────────────────────────────────────
+    function markSolved(id) {
+      const card     = $('card-' + id);
+      const input    = $('input-' + id);
+      const btn      = $('btn-' + id);
+      const iconSlot = $('icon-' + id);
+      const feedback = $('feedback-' + id);
+
+      card.classList.add('solved');
+      input.readOnly = true;
+      input.disabled = true;
+      btn.disabled = true;
+      btn.textContent = 'SOLVED';
+
+      iconSlot.innerHTML = `
+        <svg class="icon-check" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M7 12.5l3.5 3.5 6.5-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+
+      feedback.className = 'feedback feedback-correct';
+      feedback.textContent = '✓ Flag accepted!';
+      card.classList.add('pop-in');
+      card.addEventListener('animationend', () => card.classList.remove('pop-in'), { once: true });
+    }
+
+    // ── Shake animation for wrong answer ──────────────────────────────────────
+    function showIncorrect(id) {
+      const card     = $('card-' + id);
+      const input    = $('input-' + id);
+      const feedback = $('feedback-' + id);
+
+      input.classList.add('input-error');
+      card.classList.add('shake');
+      feedback.className = 'feedback feedback-incorrect';
+      feedback.textContent = '✗ Not quite — try again.';
+
+      card.addEventListener('animationend', () => card.classList.remove('shake'), { once: true });
+      setTimeout(() => {
+        input.classList.remove('input-error');
+        feedback.className = 'feedback';
+        feedback.textContent = '';
+      }, 2500);
+    }
+
+    // ── Submit a flag guess ────────────────────────────────────────────────────
+    async function submitFlag(id) {
+      if (solved[id]) return;
+
+      const input = $('input-' + id);
+      const btn   = $('btn-' + id);
+      const value = input.value.trim();
+
+      if (!value) {
+        input.focus();
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = '...';
+
+      try {
+        const res = await fetch('/api/verify/' + id, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ value }),
+        });
+
+        if (!res.ok) throw new Error('Server error ' + res.status);
+
+        const data = await res.json();
+
+        if (data.correct) {
+          solved[id] = true;
+          solvedCount++;
+          updateProgress();
+          markSolved(id);
+
+          if (solvedCount === TOTAL) {
+            await triggerMasterReveal();
+          }
+        } else {
+          showIncorrect(id);
+          btn.disabled = false;
+          btn.textContent = 'SUBMIT';
+        }
+      } catch (err) {
+        const feedback = $('feedback-' + id);
+        feedback.className = 'feedback feedback-incorrect';
+        feedback.textContent = '⚠ Network error — please try again.';
+        btn.disabled = false;
+        btn.textContent = 'SUBMIT';
+      }
+    }
+
+    // ── Wire up buttons and Enter key ──────────────────────────────────────────
+    document.querySelectorAll('.submit-btn').forEach(btn => {
+      btn.addEventListener('click', () => submitFlag(btn.dataset.id));
+    });
+
+    document.querySelectorAll('.flag-input').forEach(input => {
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          const id = input.closest('.challenge-card').dataset.id;
+          submitFlag(id);
+        }
+      });
+    });
+
+    // ── Master flag reveal ─────────────────────────────────────────────────────
+    async function triggerMasterReveal() {
+      try {
+        const res = await fetch('/api/master-flag');
+        if (!res.ok) {
+          console.error('Master flag endpoint rejected — server-side check failed (' + res.status + ')');
+          return;
+        }
+        const data = await res.json();
+
+        $('masterFlagValue').textContent = data.masterFlag;
+        $('masterRevealMsg').textContent  = data.revealMessage;
+
+        masterReveal.hidden = false;
+        masterReveal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        spawnParticles();
+      } catch (err) {
+        console.error('Failed to fetch master flag:', err);
+      }
+    }
+
+    // ── Particle / glitch effect ───────────────────────────────────────────────
+    function spawnParticles() {
+      const container = $('particles');
+      const colors = ['#00d4ff', '#a855f7', '#7c3aed', '#22d3ee', '#c084fc'];
+      for (let i = 0; i < 60; i++) {
+        const p = document.createElement('span');
+        p.className = 'particle';
+        p.style.cssText = [
+          'left:' + (Math.random() * 100) + '%',
+          'animation-delay:' + (Math.random() * 2) + 's',
+          'animation-duration:' + (1.5 + Math.random() * 2) + 's',
+          'background:' + colors[Math.floor(Math.random() * colors.length)],
+          'width:' + (2 + Math.random() * 5) + 'px',
+          'height:' + (2 + Math.random() * 5) + 'px',
+        ].join(';');
+        container.appendChild(p);
+      }
+    }
+
+    // ── On page load: restore already-solved UI state ─────────────────────────
+    // The solved object was injected server-side from the signed cookie,
+    // so no extra API call is needed to restore UI state.
+    (function restoreUI() {
+      updateProgress();
+
+      for (const [id, isSolved] of Object.entries(solved)) {
+        if (isSolved) {
+          markSolved(id);
+        }
+      }
+
+      // If all already solved on load, show master reveal immediately
+      if (solvedCount === TOTAL) {
+        triggerMasterReveal();
+      }
+    })();
+
+  })();
+  </script>
+
+</body>
+</html>
